@@ -3,13 +3,13 @@ package pacman;
 /**
  * @author Falie
  */
-class ScatterTargetGetter_BlinkyStd extends ScatterTargetGetter_Const{
+class ScatterTarget_Blinky_Std extends ScatterTargetGetter_Const{
     /**Elroy Cruise*/
     
-    public ScatterTargetGetter_BlinkyStd(GameLogic logic, int x, int y) {
+    public ScatterTarget_Blinky_Std(GameLogic logic, int x, int y) {
         super(logic, x, y);
     }
-    public ScatterTargetGetter_BlinkyStd(GameLogic logic, Vector target) {
+    public ScatterTarget_Blinky_Std(GameLogic logic, Vector target) {
         super(logic, target);
     }
     
