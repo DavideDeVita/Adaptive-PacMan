@@ -90,7 +90,7 @@ public class CustomSpecifics {
     }
     
     public static ScatterTargetGetter std_Blinky_Scatter(GameLogic logic){
-        return new ScatterTargetGetter_BlinkyStd(logic, 25, -3);
+        return new ScatterTarget_Blinky_Std(logic, 25, -3);
     }
     public static ScatterTargetGetter std_Pinky_Scatter(GameLogic logic){
         return new ScatterTargetGetter_Const(logic, 3, -3);

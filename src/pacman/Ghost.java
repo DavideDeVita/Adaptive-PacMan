@@ -87,36 +87,6 @@ public class Ghost extends Agent{
             }
         }
     }
-    public void updateDirection_OLD(){
-        //This is not required until it changes its position
-        if(state == Housed){
-            if(!logic.canGo(this, dir))
-                turn180();
-        }
-        else{
-            if(hasToChooseDir){
-                hasToChooseDir=false;
-                
-                Vector target;
-                switch ( state ){
-                    case Eaten:
-                        target=this.board.getGhostHouse();
-                        break;
-                    case Out:
-                        if( isFrightened ){
-                            dir=chooseRandomDirection();
-                            return;
-                        }
-                        target = getTarget();
-                        break;
-                    case Exiting:
-                    default:
-                        target=this.board.getOutDoor();
-                }
-                dir = chooseDirection(target);
-            }
-        }
-    }
     
     protected Vector getTarget(){
         Vector target;
