@@ -84,22 +84,6 @@ public abstract class Agent {
             }
     }
     
-    protected Direction maxEuclidDistDirection(Agent from){
-        int coordX=coord_X(), coordY=coord_Y();
-        float max=Float.MIN_VALUE, curr;
-        Direction ret=dir;
-        for(Direction d : Direction.values()){
-            if(logic.canGo(this, d)){
-                curr = Utils.euclidean_dist2(this.coord_X()+d.x, this.coord_Y()+d.y, from.coord_X(), from.coord_Y());
-                if(curr>max){
-                    max=curr;
-                    ret=d;
-                }
-            }
-        }
-        return ret;
-    }
-    
     /**Aligns the horizontal next logical position (nextX) to allow position between tiles
     *    as in classic PacMan.
     * Aesthetic only.. unused
@@ -130,11 +114,14 @@ public abstract class Agent {
             y = this.board.coord_to_logicalHalfTile_Y(lastCoord_Y);
             System.out.println(this+"set to logic "+x+" "+y+"");
             System.out.println(this+" set to "+coord_X()+" "+coord_Y()+"\n");
+            //onResetFromWall();
         }
         else{
             lastCoord_X = coord_X();
             lastCoord_Y = coord_Y();
-            System.out.println(this+" updated Last Coord "+lastCoord_X+" "+lastCoord_Y+"\n");
+            System.out.println(this+" updated Last Coord "+lastCoord_X+" "+lastCoord_Y);
         }
     }
+
+    protected abstract void onResetFromWall();
 }

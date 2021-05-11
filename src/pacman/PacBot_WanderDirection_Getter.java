@@ -27,27 +27,24 @@ class PacBot_WanderDirection_RandomTurns extends PacBot_WanderDirection_Getter{
         int coordX = pac.coord_X(),
                 coordY = pac.coord_Y();
         Path path = board.pathIn(coordX, coordY);
-        if( pac.positionChanged() ){
-            if( path.ways()>2 ){
-                int i=0;
-                boolean canGo[] = new boolean[Direction.values().length];
-                for(Direction d : Direction.values()){
-                    //Don't go behind.. it's pointless
-                    if(d!=pac.dir.opposite() && logic.canGo(pac, d)){
-                        //options++;
-                        canGo[i]=true;
-                    }
-                    else
-                        canGo[i]=false;
-                    i++;
+        if( path.ways()>2 ){
+            int i=0;
+            boolean canGo[] = new boolean[Direction.values().length];
+            for(Direction d : Direction.values()){
+                //Don't go behind.. it's pointless
+                if(d!=pac.dir.opposite() && logic.canGo(pac, d)){
+                    //options++;
+                    canGo[i]=true;
                 }
-                
-                return Direction.values()[ Utils.argRandom(canGo) ];
+                else
+                    canGo[i]=false;
+                i++;
             }
-            else
-                return pac.cornerTurn(path);
+
+            return Direction.values()[ Utils.argRandom(canGo) ];
         }
-        return pac.dir;//Extremis case
+        else
+            return pac.cornerTurn(path);
     }
 }
 
@@ -69,55 +66,54 @@ class PacBot_WanderDirection_PelletGatherer extends PacBot_WanderDirection_Gette
         int coordX = pac.coord_X(),
                 coordY = pac.coord_Y();
         Path path = board.pathIn(coordX, coordY);
-        if( pac.positionChanged() ){
-            if( path.ways()>2 ){
-                int i=0;
-                int dotPerDirection[] = new int[Direction.values().length],
-                        totalCountDots=0;
-                boolean availableDirections[] = new boolean[Direction.values().length];
-                for(Direction dir : Direction.values()){
-                    if(logic.canGo(pac, dir)){
-                        availableDirections[i]=true;
-                        dotPerDirection[i] = countDots(coordX, coordY, dir, stepsAhead_curr-1);
-                        totalCountDots += dotPerDirection[i];
-                    }
-                    else{
-                        dotPerDirection[i]=0;
-                        availableDirections[i]=false;
-                    }
-                    i++;
+        if( path.ways()>2 ){
+            int i=0;
+            int dotPerDirection[] = new int[Direction.values().length],
+                    totalCountDots=0;
+            boolean availableDirections[] = new boolean[Direction.values().length];
+            for(Direction dir : Direction.values()){
+                if(logic.canGo(pac, dir)){
+                    availableDirections[i]=true;
+                    dotPerDirection[i] = countDots(coordX, coordY, dir, stepsAhead_curr-1);
+                    totalCountDots += dotPerDirection[i];
                 }
-                if(totalCountDots==0)
-                    stepsAhead_curr++;
-                else
-                    stepsAhead_curr=stepsAhead;
-                
-                //unavailable Directions must not be considered by softmax
-                int dotPerDirection_trimmed[] = new int[ Utils.count(availableDirections) ];
-                int trim_i=0;
-                for (i=0; i<dotPerDirection.length; i++){
-                    if(availableDirections[i])
-                        dotPerDirection_trimmed[trim_i++]=dotPerDirection[i];
+                else{
+                    dotPerDirection[i]=0;
+                    availableDirections[i]=false;
                 }
-                System.out.println("\ndotsPerDirection: "+dotPerDirection[0]+"\t\t"
-                        + ""+dotPerDirection[1]+"\t\t"+dotPerDirection[2]+"\t\t"+dotPerDirection[3]);
-                
-                trim_i = Utils.argRandomFromSoftmax(dotPerDirection_trimmed);
-                System.out.println("trim_i "+trim_i);
-                for (i=0; i<dotPerDirection.length; i++){
-                    if(!availableDirections[i])
-                        continue;
-                    trim_i--;
-                    if(trim_i<0){
-                        System.out.println("Returning dir "+i);
-                        return Direction.values()[i];
-                    }
+                i++;
+            }
+            if(totalCountDots==0)
+                stepsAhead_curr++;
+            else
+                stepsAhead_curr=stepsAhead;
+
+            //unavailable Directions must not be considered by softmax
+            int dotPerDirection_trimmed[] = new int[ Utils.count(availableDirections) ];
+            int trim_i=0;
+            for (i=0; i<dotPerDirection.length; i++){
+                if(availableDirections[i])
+                    dotPerDirection_trimmed[trim_i++]=dotPerDirection[i];
+            }
+            System.out.println("\ndotsPerDirection: "+dotPerDirection[0]+"\t\t"
+                    + ""+dotPerDirection[1]+"\t\t"+dotPerDirection[2]+"\t\t"+dotPerDirection[3]);
+
+            trim_i = Utils.argRandomFromSoftmax(dotPerDirection_trimmed);
+            System.out.println("trim_i "+trim_i);
+            for (i=0; i<dotPerDirection.length; i++){
+                if(!availableDirections[i])
+                    continue;
+                trim_i--;
+                if(trim_i<0){
+                    System.out.println("Returning dir "+i);
+                    return Direction.values()[i];
                 }
             }
-            else
-                return pac.cornerTurn(path);
         }
-        return pac.dir;//Extremis case
+        else
+            return pac.cornerTurn(path);
+        
+        return pac.dir; //Never
     }
 
     private int countDots(int coordX, int coordY, Direction dir, int stepsLeft) {

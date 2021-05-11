@@ -179,4 +179,7 @@ public class Board {
     int coord_to_logicalTile_Y(int coord_Y) {
         return coord_Y*TILE_LOGIC_SIZE ;
     }
+    
+    int xFix(int x){ return (x+cols)%cols; }
+    int yFix(int y){ return (y+rows)%rows; }
 }

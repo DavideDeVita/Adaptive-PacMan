@@ -49,5 +49,7 @@ public class PacMan_Player extends PacMan implements KeyListener{
 
     @Override
     public void keyReleased(KeyEvent ke) { }
-    
+
+    @Override
+    protected void onResetFromWall() {  }
 }
