@@ -217,7 +217,9 @@ public class Ghost extends Agent{
     }
 
     void turn180() {
+        System.out.println(this+" turns 180 dir was "+dir+". lastDir was "+lastDir);
         this.dir = dir.opposite();
         this.lastDir = lastDir.opposite();
+        this.hasToChooseDir=true;//aggiunto dopo
     }
 }
