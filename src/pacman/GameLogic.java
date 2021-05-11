@@ -85,7 +85,7 @@ public class GameLogic {
             ghosts[CLYDE].setScatterTile( CustomSpecifics.std_Clyde_Scatter(this) );
             ghosts[CLYDE].setChaseTile( CustomSpecifics.std_Clyde_Chase(this) );
         pacman = new PacMan_Bot("PacMan", this, 14, 23, Left, 6, 
-                new PacBot_WanderDirection_RandomTurns(this), new PacBot_EscapeDirection_MaxDiag_plus_Euclidean2(this));
+                new PacBot_WanderDirection_RandomTurns(this), new PacBot_EscapeDirection_nStepsAhead_MaxDiag_plus_Euclidean2(this, 3));
         //pacman = new PacMan_Player("PacMan", this, 14, 23, Left);
     }
 
@@ -318,6 +318,11 @@ public class GameLogic {
     public boolean canGo(PacMan pacman, Direction dir){
         Path path = board.pathIn( pacman.coord_X(), pacman.coord_Y() );
         boolean isDoor = board.elementIn( pacman.coord_X()+dir.x, pacman.coord_Y()+dir.y)==Door;
+        return path.canGo(dir) && !isDoor;
+    }
+    boolean couldPacGo(int coordX, int coordY, Direction dir) {
+        Path path = board.pathIn( coordX, coordY );
+        boolean isDoor = board.elementIn(coordX+dir.x, coordY+dir.y)==Door;
         return path.canGo(dir) && !isDoor;
     }
 
