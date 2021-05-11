@@ -85,7 +85,7 @@ public class GameLogic {
             ghosts[CLYDE].setScatterTile( CustomSpecifics.std_Clyde_Scatter(this) );
             ghosts[CLYDE].setChaseTile( CustomSpecifics.std_Clyde_Chase(this) );
         pacman = new PacMan_Bot("PacMan", this, 14, 23, Left, 4, 
-                new PacBot_WanderDirection_PelletGatherer(this, 5),
+            new PacBot_WanderDirection_PelletBFS(this),
                 new PacBot_EscapeDirection_nStepsAhead_MaxDiag_plus_Euclidean2(this, 5));
         //pacman = new PacMan_Player("PacMan", this, 14, 23, Left);
     }

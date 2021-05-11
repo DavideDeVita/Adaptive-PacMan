@@ -42,14 +42,15 @@ public class Ghost extends Agent{
 
     @Override
     public void update(float deltaSeconds) {
-        System.out.println(this+" state: "+state + (hasToChooseDir?" has to choose":""));
+        System.out.println(this+" Start Update:\t state: "+state + (hasToChooseDir?" has to choose":""));
         if(startAfter_yetToWait>=0){
             startAfter_yetToWait-=deltaSeconds;
             if(startAfter_yetToWait<0)
                 state=Exiting;
         }
-        System.out.println(this+" state: "+state+"\t dir: "+dir);
+        //System.out.println(this+" state: "+state+"\t dir: "+dir);
         super.update(deltaSeconds); //To change body of generated methods, choose Tools | Templates.
+        System.out.println(this+" end Update\tstate: "+state+"\t dir: "+dir+"\n");
     }
     
     @Override
@@ -221,5 +222,11 @@ public class Ghost extends Agent{
         this.dir = dir.opposite();
         this.lastDir = lastDir.opposite();
         this.hasToChooseDir=true;//aggiunto dopo
+    }
+
+    @Override
+    protected void onResetFromWall() {
+        this.hasToChooseDir=true;
+        //dir and lastDir can be left like this? suppose so
     }
 }

@@ -6,10 +6,14 @@ package pacman;
  */
 public class PacMan_Bot extends PacMan{
     protected int last_coord_X, last_coord_Y;
+    protected boolean forceYes = false;
     private final float escapeTriggerDist2;
     private final PacBot_WanderDirection_Getter wander;
     private final PacBot_EscapeDirection_Getter escape;
+    public State lastState;
 
+    public static enum State {Wander, Escape};
+            
     public PacMan_Bot(String name, GameLogic logic, int startX, int startY, Direction startDir, float triggerDist, PacBot_WanderDirection_Getter wander, PacBot_EscapeDirection_Getter escape) {
         super(name, logic, startX, startY, startDir);
         this.escapeTriggerDist2 = triggerDist*triggerDist;
@@ -25,6 +29,10 @@ public class PacMan_Bot extends PacMan{
     }
     
     protected final boolean positionChanged(){
+        if( forceYes ){
+            forceYes=false;
+            return true;
+        }
         return last_coord_X!=coord_X() || last_coord_Y!=coord_Y();
     }
     
@@ -33,10 +41,13 @@ public class PacMan_Bot extends PacMan{
         if ( Utils.euclidean_dist2(selectNearestGhost(), this) > escapeTriggerDist2){
             if ( positionChanged())
                 dir = wander.getWanderDirection(this);
+            System.out.println("PacMan Bot: Wandering "+dir);
+            this.lastState = State.Wander;
         }
         else{
-            System.out.println(this+" is escaping ");
             dir = escape.getEscapeDirection(this);
+            System.out.println(this+" is Escaping "+dir);
+            this.lastState = State.Escape;
         }
     }
 
@@ -141,5 +152,10 @@ public class PacMan_Bot extends PacMan{
         if(argmax!=-1)
             dir = Direction.values()[ argmax ];
         System.out.println(this+" safest dir was "+dir);
+    }
+
+    @Override
+    protected void onResetFromWall() {
+        forceYes=true;
     }
 }
