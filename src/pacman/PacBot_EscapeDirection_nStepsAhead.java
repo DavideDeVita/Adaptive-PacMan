@@ -71,7 +71,8 @@ public abstract class PacBot_EscapeDirection_nStepsAhead extends PacBot_EscapeDi
             count++;
             if(stepsLeft>0){
                 for(Direction d : Direction.values())
-                    _exploreDirection(coordX + dir.x, coordY + dir.y, d, stepsLeft-1);
+                    if( d!= dir.opposite())
+                        _exploreDirection(coordX + dir.x, coordY + dir.y, d, stepsLeft-1);
             }
         }
     }
