@@ -155,12 +155,12 @@ public class Ghost extends Agent{
         int nextX = (x + dir.x * undirectedMovement + board.m_width)%board.m_width,
                 nextY = (y + dir.y * undirectedMovement + board.m_height)%board.m_height;
         int coord_X = coord_X(), coord_Y = coord_Y();
-        int halfTile_X = board.halfTile_X(nextX),
-                halfTile_Y = board.halfTile_Y(nextY);
+        int halfTile_X = board.coord_to_logicalHalfTile_X(coord_X),//.halfTile_X(nextX),
+                halfTile_Y = board.coord_to_logicalHalfTile_Y(coord_Y);//.halfTile_Y(nextY);
         switch(dir){
             case Up:
                 if( board.elementIn(coord_X, coord_Y-1)==Wall )
-                    nextY = min(nextY, halfTile_Y);
+                    nextY = max(nextY, halfTile_Y);
                 nextX=halfTile_X;
                 break;
             case Left:
@@ -170,12 +170,12 @@ public class Ghost extends Agent{
                 break;
             case Down:
                 if( board.elementIn(coord_X, coord_Y+1)==Wall )
-                    nextY = max(nextY, halfTile_Y);
+                    nextY = min(nextY, halfTile_Y);
                 nextX=halfTile_X;
                 break;
             case Right:
                 if( board.elementIn(coord_X+1, coord_Y)==Wall )
-                    nextX = max(nextX, halfTile_X);
+                    nextX = min(nextX, halfTile_X);
                 nextY=halfTile_Y;
                 break;
         }
@@ -217,11 +217,15 @@ public class Ghost extends Agent{
         return logic.timerState.state;
     }
 
-    void turn180() {
+    public void turn180() {
         System.out.println(this+" turns 180 dir was "+dir+". lastDir was "+lastDir);
         this.dir = dir.opposite();
         this.lastDir = lastDir.opposite();
         this.hasToChooseDir=true;//aggiunto dopo
+    }
+
+    public boolean isAThreat() {
+        return isFrightened || state==Housed || state==Eaten;
     }
 
     @Override

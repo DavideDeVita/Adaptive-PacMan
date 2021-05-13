@@ -83,10 +83,10 @@ public class GameLogic {
             
             ghosts[CLYDE] = new Ghost("Clyde", this, 15, 14, levelSpecifics.get_Activate_Clyde(), Up, Color.ORANGE);
             ghosts[CLYDE].setScatterTile( CustomSpecifics.std_Clyde_Scatter(this) );
-            ghosts[CLYDE].setChaseTile( CustomSpecifics.std_Clyde_Chase(this) );
+            ghosts[CLYDE].setChaseTile( CustomSpecifics.pacmanNearestDot_Clyde_Chase(this) );
         pacman = new PacMan_Bot("PacMan", this, 14, 23, Left, 4, 
             new PacBot_WanderDirection_PelletBFS(this),
-                new PacBot_EscapeDirection_nStepsAhead_MaxDiag_plus_Euclidean2(this, 5));
+                new PacBot_EscapeDirection_BFS(this));
         //pacman = new PacMan_Player("PacMan", this, 14, 23, Left);
     }
 
@@ -345,8 +345,7 @@ public class GameLogic {
         Ghost nearest=null, ghost;
         for(int g=0; g<NUM_GHOSTS; g++){
             ghost = ghosts[g];
-            if( ghost.isFrightened || ghost.state==GhostPersonalState.Housed
-                    || ghost.state==GhostPersonalState.Eaten )
+            if( ghost.isAThreat() )
                 continue;
             
             curr = Utils.euclidean_dist2( agent, ghosts[g] );

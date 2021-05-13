@@ -28,8 +28,8 @@ public abstract class PacMan extends Agent{
                 nextY = (y + dir.y * undirectedMovement + board.m_height)%board.m_height;
         int coord_x = coord_X(), 
                 coord_y = coord_Y();
-        int halfTile_X = board.halfTile_X(nextX),
-                halfTile_Y = board.halfTile_Y(nextY);
+        int halfTile_X = board.coord_to_logicalHalfTile_X(coord_x),//.halfTile_X(nextX),
+                halfTile_Y = board.coord_to_logicalHalfTile_Y(coord_y);//.halfTile_Y(nextY);
         
         switch(dir){
             case Up:

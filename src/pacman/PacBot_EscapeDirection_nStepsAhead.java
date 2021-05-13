@@ -91,6 +91,19 @@ class PacBot_EscapeDirection_nStepsAhead_Euclidean2 extends PacBot_EscapeDirecti
     }
 }
 
+/*Maximizes the minimal Eculidean^2 distance*/
+class PacBot_EscapeDirection_nStepsAhead_ToroEuclidean2 extends PacBot_EscapeDirection_nStepsAhead{
+
+    public PacBot_EscapeDirection_nStepsAhead_ToroEuclidean2(GameLogic logic, int stepsAhead) {
+        super(logic, stepsAhead);
+    }
+
+    @Override
+    public float computeDistance(int coordX, int coordY, Agent agent, Direction d) {
+        return Utils.euclidean_dist2(board.xFix(coordX+d.x), board.yFix(coordY+d.y), agent.coord_X(), agent.coord_Y());
+    }
+}
+
 
 /**Considers the product of the x and y differences (plus 1 to avoid 0) as distance from ghost.
  * It should improve the probability to take a turn when chased*/
@@ -107,8 +120,6 @@ class PacBot_EscapeDirection_nStepsAhead_MaximizeDiagonal extends PacBot_EscapeD
     }
 }
 
-
-/*Miximizes the minimal Eculidean^2 distance*/
 class PacBot_EscapeDirection_nStepsAhead_MaxDiag_plus_Euclidean2 extends PacBot_EscapeDirection_nStepsAhead{
 
     public PacBot_EscapeDirection_nStepsAhead_MaxDiag_plus_Euclidean2(GameLogic logic, int stepsAhead) {
@@ -120,5 +131,19 @@ class PacBot_EscapeDirection_nStepsAhead_MaxDiag_plus_Euclidean2 extends PacBot_
         return ( Utils.difference(coordX+d.x, agent.coord_X()) + 1 ) * 
                             ( Utils.difference(coordY+d.y, agent.coord_Y()) + 1 )+
                 Utils.euclidean_dist2(coordX+d.x, coordY+d.y, agent.coord_X(), agent.coord_Y());
+    }
+}
+
+class PacBot_EscapeDirection_nStepsAhead_MaxDiag_plus_ToroEuclidean2 extends PacBot_EscapeDirection_nStepsAhead{
+
+    public PacBot_EscapeDirection_nStepsAhead_MaxDiag_plus_ToroEuclidean2(GameLogic logic, int stepsAhead) {
+        super(logic, stepsAhead);
+    }
+
+    @Override
+    public float computeDistance(int coordX, int coordY, Agent agent, Direction d) {
+        return ( Utils.difference(coordX+d.x, agent.coord_X()) + 1 ) * 
+                            ( Utils.difference(coordY+d.y, agent.coord_Y()) + 1 )
+                + Utils.euclidean_dist2(board.xFix(coordX+d.x), board.yFix(coordY+d.y), agent.coord_X(), agent.coord_Y());
     }
 }

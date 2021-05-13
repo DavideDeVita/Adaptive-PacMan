@@ -26,7 +26,7 @@ public class PacBot_WanderDirection_PelletBFS extends PacBot_WanderDirection_Get
         return path.removeFirst();
     }
 
-    private void BFS_pellet(int coordX, int coordY) {
+    private void BFS_pellet(int startX, int startY) {
         // Class definition
         class BFS_Queue_Node{
             final int x, y;
@@ -42,20 +42,22 @@ public class PacBot_WanderDirection_PelletBFS extends PacBot_WanderDirection_Get
         Queue<BFS_Queue_Node> queue = new LinkedList<>();
             //System.out.println("BFS: start "+coordX+" "+coordY);
         Direction pred[][] = new Direction[board.rows][board.cols];
-        pred[coordY][coordX]=DEFAULT;//Just to stop the backtracking
+        pred[startY][startX]=DEFAULT;//Just to stop the backtracking
         //for (Direction dir : Direction.values()){
         int r=Utils.random(0, 3), D = Direction.values().length;
+        int tileX = startX, tileY = startY; //unused
         for (int i=0; i<D; i++){
             Direction dir = Direction.values()[ (i+r)%D ];
-            if( logic.couldPacGo(coordX, coordY, dir) ){
-                queue.add( new BFS_Queue_Node(coordX+dir.x, coordY+dir.y, dir) );
-            System.out.println("BFS: first gen "+(coordX+dir.x)+" "+(coordY+dir.y)+"\tfrom "+dir);
-                pred[ board.yFix(coordY+dir.y) ][ board.xFix(coordX+dir.x) ] = dir;
+            tileX = board.xFix( startX+dir.x );
+            tileY = board.yFix( startY+dir.y );
+            if( logic.couldPacGo(startX, startY, dir) ){
+                queue.add( new BFS_Queue_Node(tileX, tileY, dir) );
+            System.out.println("BFS: first gen "+tileX+" "+tileY+"\tfrom "+dir);
+                pred[ tileY ][ tileX ] = dir;
             }
         }
         //BFS
         boolean found=false;
-        int tileX = coordX, tileY = coordY; //unused
         while(!found /*&& !queue.isEmpty()*/ ){ //Should never be empty without finding
             BFS_Queue_Node curr = queue.poll();
             //System.out.println("BFS: examining "+curr.x+" "+curr.y+"\tfrom "+curr.dir);
@@ -82,7 +84,7 @@ public class PacBot_WanderDirection_PelletBFS extends PacBot_WanderDirection_Get
         
         Direction dir;
         //System.out.println("BFS: backtracking init: we re in "+tileX+" "+tileY+"\tend in "+coordX+" "+coordY);
-        while (tileX!=coordX || tileY!=coordY){
+        while (tileX!=startX || tileY!=startY){
             dir = pred[ board.yFix(tileY) ][ board.xFix(tileX) ];
             //System.out.println("BFS: backtracking "+tileX+" "+tileY+"\tfrom "+dir);
             path.addFirst( dir );
