@@ -29,17 +29,14 @@ public class Utils {
     
     public static int random(int min, int max){
         if(min==max) return min;
-        System.out.println("r: "+min+" "+max);
         return R.nextInt(max-min+1)+min;
     }
     public static float random(float min, float max){
         if(min==max) return min;
-        System.out.println("r: "+min+" "+max);
         return ( R.nextFloat() * max-min )+min;
     }
     public static double random(double min, double max){
         if(min==max) return min;
-        System.out.println("r: "+min+" "+max);
         return ( R.nextDouble()* max-min )+min;
     }
     

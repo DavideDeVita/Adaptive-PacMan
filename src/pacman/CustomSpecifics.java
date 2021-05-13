@@ -114,4 +114,14 @@ public class CustomSpecifics {
     static ChaseTargetGetter std_Clyde_Chase(GameLogic logic) {
         return new ChaseTarget_Clyde_Std(logic);
     }
+    
+    static ChaseTargetGetter bugFix_Pinky_Chase(GameLogic logic) {
+        return new ChaseTarget_Pinky_BugFix(logic);
+    }
+    static ChaseTargetGetter bugFix_Inky_Chase(GameLogic logic) {
+        return new ChaseTarget_Inky_BugFix(logic);
+    }
+    static ChaseTargetGetter pacmanNearestDot_Clyde_Chase(GameLogic logic) {
+        return new ChaseTarget_Clyde_PacmanClosestDot(logic);
+    }
 }

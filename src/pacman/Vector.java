@@ -26,4 +26,18 @@ class Vector {
         this.x = x;
         this.y = y;
     }
+    
+    @Override
+    public Vector clone(){
+        return new Vector(x, y);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == null || !(obj instanceof Vector) ){
+            return false;
+        }
+        final Vector other = (Vector) obj;
+        return this.x==other.x && this.y==other.y;
+    }
 }

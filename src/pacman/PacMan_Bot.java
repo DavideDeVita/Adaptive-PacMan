@@ -46,7 +46,7 @@ public class PacMan_Bot extends PacMan{
         }
         else{
             dir = escape.getEscapeDirection(this);
-            System.out.println(this+" is Escaping "+dir);
+            System.out.println("PacMan Bot: is Escaping "+dir);
             this.lastState = State.Escape;
         }
     }
