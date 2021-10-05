@@ -6,12 +6,10 @@ package pacman;
  */
 public abstract class ChaseTargetGetter {
     protected final Vector target;
-    protected final GameLogic logic;
 
-    public ChaseTargetGetter(GameLogic logic) {
+    public ChaseTargetGetter() {
         this.target = new Vector(0,0);
-        this.logic = logic;
     }
 
-    public abstract Vector getChaseTarget(Ghost thisGhost);
+    public abstract Vector getChaseTarget(GameLogic logic, Ghost thisGhost);
 }

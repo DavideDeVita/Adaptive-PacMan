@@ -31,6 +31,15 @@ public enum TimerState {
     public boolean isLast() {
         return this.ordinal()+1 >= TimerState.values().length;
     }
+
+    static TimerState stateAt(float fullGameTimer, LevelSpecifics specifics) {
+        TimerState[] values = values();
+        for (int i=0; i<values.length; i++){
+            fullGameTimer -= values[i].timerStateDuration(specifics);
+            if(fullGameTimer <= 0) return values[i];
+        }
+        return values[values.length-1];
+    }
 }
 
 enum State { 

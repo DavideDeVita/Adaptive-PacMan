@@ -15,18 +15,23 @@ public class View extends JPanel{
     private final Game_PacMan pmg;
     private final Board b;
     private final GameLogic gl;
+    private final int renderAroundWidth;
     
-    final static int TILE_SIZE = 20,
+    final static int TILE_SIZE = 22,
             DOT_RADIUS = 7,
             ENERGIZER_RADIUS = 15,
-            PACMAN_RADIUS = 30,
-            GHOST_RADIUS = 25;
+            PACMAN_RADIUS = 32,
+            GHOST_RADIUS = 28;
     
     
     public View(Game_PacMan game){
+        this(game, 2);
+    }
+    public View(Game_PacMan game, int renderAroundWidth){
         this.pmg=game;
         this.b = game.board;
-        this.gl=game.gameLogic;
+        this.gl=game.logic;
+        this.renderAroundWidth=renderAroundWidth;
         
         setSize( b.cols*TILE_SIZE, (b.rows+1)*TILE_SIZE );
 
@@ -48,7 +53,7 @@ public class View extends JPanel{
         requestFocusInWindow();
     }
     
-    public void firstRender(){
+    public void fullRender(){
         Graphics g = this.getGraphics();
         
         for (int y=0; y<b.rows; y++){
@@ -104,21 +109,23 @@ public class View extends JPanel{
         
         //Render around agents
         for(int i=0; i<gl.ghosts.length; i++)
-            renderAround(g, gl.ghosts[i], 2);
-        renderAround(g, gl.pacman, 2);
+            renderAround(g, gl.ghosts[i]);
+        renderAround(g, gl.pacman);
         //draw agents
         for(int i=0; i<gl.ghosts.length; i++){
             drawGhost(g, gl.ghosts[i]);
             //drawGhost(g, gl.ghosts[i]);
         }
         drawPacMan(g, gl.pacman);
-        //drawPacMan(g, gl.pacman);
+
+        //drawColor(g, 13,14, Color.ORANGE);
+        //drawColor(g, 13,11, Color.GREEN);
     }
-    public void renderAround(Graphics g, Agent agent, int width){
+    public void renderAround(Graphics g, Agent agent){
         int coord_X = b.logicToCoordinate_X( agent.x ),
             coord_Y = b.logicToCoordinate_Y( agent.y );
-        for(int y=-width; y<=width; y++)
-            for(int x=-width; x<=width; x++)
+        for(int y=-renderAroundWidth; y<=renderAroundWidth; y++)
+            for(int x=-renderAroundWidth; x<=renderAroundWidth; x++)
                 drawTile(g, 
                     (coord_X+x + b.cols) % b.cols, 
                     (coord_Y+y + b.rows) % b.rows
@@ -178,6 +185,10 @@ public class View extends JPanel{
         
         g.setColor(Color.WHITE);
         g.fillOval(TILE_SIZE*x+(TILE_SIZE/2)-(ENERGIZER_RADIUS/2), TILE_SIZE*y+(TILE_SIZE/2)-(ENERGIZER_RADIUS/2), ENERGIZER_RADIUS, ENERGIZER_RADIUS);
+    }
+    public void drawColor(Graphics g, int x, int y, Color c){
+        g.setColor(c);
+        g.fillRect(TILE_SIZE*x, TILE_SIZE*y, TILE_SIZE, TILE_SIZE); //it should be (x, y) so first x then y
     }
     
     public void drawPacMan(Graphics g, PacMan pacman){

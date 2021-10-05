@@ -14,6 +14,8 @@ public abstract class PacBot_WanderDirection_Getter {
     }
     
     public abstract Direction getWanderDirection(PacMan_Bot pac);
+
+    void reset() { }
 }
 
 class PacBot_WanderDirection_RandomTurns extends PacBot_WanderDirection_Getter{
@@ -69,12 +71,14 @@ class PacBot_WanderDirection_PelletGatherer extends PacBot_WanderDirection_Gette
         if( path.ways()>2 ){
             int i=0;
             int dotPerDirection[] = new int[Direction.values().length],
-                    totalCountDots=0;
+                    totalCountDots=0, min=Integer.MAX_VALUE;
             boolean availableDirections[] = new boolean[Direction.values().length];
             for(Direction dir : Direction.values()){
                 if(logic.canGo(pac, dir)){
                     availableDirections[i]=true;
                     dotPerDirection[i] = countDots(coordX, coordY, dir, stepsAhead_curr-1);
+                    if(dotPerDirection[i]<min)
+                        min=dotPerDirection[i];
                     totalCountDots += dotPerDirection[i];
                 }
                 else{
@@ -88,24 +92,39 @@ class PacBot_WanderDirection_PelletGatherer extends PacBot_WanderDirection_Gette
             else
                 stepsAhead_curr=stepsAhead;
 
+            int rescale = (min==0) ? 1 : min;
             //unavailable Directions must not be considered by softmax
+            int available = Utils.count(availableDirections);
+            if(available==0)
+                _Log.a("PacBot Pellet Gatherer. 0 available directions in "+coordX+" "+coordY);
             int dotPerDirection_trimmed[] = new int[ Utils.count(availableDirections) ];
             int trim_i=0;
             for (i=0; i<dotPerDirection.length; i++){
-                if(availableDirections[i])
-                    dotPerDirection_trimmed[trim_i++]=dotPerDirection[i];
+                if(availableDirections[i]){
+                    if(Direction.values()[i]!=pac.dir.opposite())
+                        dotPerDirection_trimmed[trim_i++]=dotPerDirection[i]/rescale;//to avoid overflow
+                    else
+                        dotPerDirection_trimmed[trim_i++]=dotPerDirection[i]/(2*rescale);
+                }
             }
-            System.out.println("\ndotsPerDirection: "+dotPerDirection[0]+"\t\t"
-                    + ""+dotPerDirection[1]+"\t\t"+dotPerDirection[2]+"\t\t"+dotPerDirection[3]);
 
-            trim_i = Utils.argRandomFromSoftmax(dotPerDirection_trimmed);
-            System.out.println("trim_i "+trim_i);
+            try{
+                trim_i = Utils.argRandomFromSoftmax(dotPerDirection_trimmed);
+            }
+            catch (IllegalStateException ise){
+                String exc = "";
+                for (int j=0; j<dotPerDirection_trimmed.length; j++)
+                    exc+=dotPerDirection_trimmed[j]+" ";
+                _Log.a("Wander Pellet Gather", ise.getMessage()+exc);
+                return pac.dir;
+            }
+                
             for (i=0; i<dotPerDirection.length; i++){
                 if(!availableDirections[i])
                     continue;
                 trim_i--;
                 if(trim_i<0){
-                    System.out.println("Returning dir "+i);
+                    if(_Log.LOG_ACTIVE) _Log.d("PacBot Update", "Returning dir "+i);
                     return Direction.values()[i];
                 }
             }
@@ -118,8 +137,9 @@ class PacBot_WanderDirection_PelletGatherer extends PacBot_WanderDirection_Gette
 
     private int countDots(int coordX, int coordY, Direction dir, int stepsLeft) {
         int subCount=0, 
-                newX=coordX+dir.x, newY=coordY+dir.y;
-        //System.out.println("subCountDots init: "+newX+" "+newY+" "+dir+" "+stepsLeft+"\t: "+board.elementIn(newX, newY));
+                newX=board.xFix(coordX+dir.x), 
+                newY=board.yFix(coordY+dir.y);
+        //if(_Log.LOG_ACTIVE) _Log.d("PacBot Update", "subCountDots init: "+newX+" "+newY+" "+dir+" "+stepsLeft+"\t: "+board.elementIn(newX, newY));
         if(logic.couldPacGo(coordX, coordY, dir)){
             if (board.elementIn(newX, newY) == Collectible.Dot ||
                     board.elementIn(newX, newY) == Collectible.Energizer )
@@ -131,7 +151,7 @@ class PacBot_WanderDirection_PelletGatherer extends PacBot_WanderDirection_Gette
                         subCount+=countDots(newX, newY, d, stepsLeft-1);
             }
         }
-        //System.out.println("subCountDots: "+newX+" "+newY+" "+dir+" "+stepsLeft+" = "+subCount);
+        //if(_Log.LOG_ACTIVE) _Log.d("PacBot Update", "subCountDots: "+newX+" "+newY+" "+dir+" "+stepsLeft+" = "+subCount);
         return subCount;
     }
 }

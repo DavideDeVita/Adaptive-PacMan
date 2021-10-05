@@ -9,6 +9,7 @@ import java.util.Queue;
 public class PacBot_WanderDirection_PelletBFS extends PacBot_WanderDirection_Getter{
     protected LinkedList<Direction> path = new LinkedList<>();
     private Direction DEFAULT = Direction.Up;
+    private final static Direction dirs[] = Direction.values();
     
     public PacBot_WanderDirection_PelletBFS(GameLogic logic) {
         super(logic);
@@ -26,56 +27,59 @@ public class PacBot_WanderDirection_PelletBFS extends PacBot_WanderDirection_Get
         return path.removeFirst();
     }
 
-    private void BFS_pellet(int startX, int startY) {
+    private void BFS_pellet(final int startX, final int startY) {
         // Class definition
         class BFS_Queue_Node{
-            final int x, y;
+            final Vector vec;
             final Direction dir;
 
             public BFS_Queue_Node(int x, int y, Direction dir) {
-                this.x = x;
-                this.y = y;
+                this.vec = new Vector(x, y);
                 this.dir = dir;
             }
         }
         //init
         Queue<BFS_Queue_Node> queue = new LinkedList<>();
-            //System.out.println("BFS: start "+coordX+" "+coordY);
+            //if(_Log.LOG_ACTIVE) _Log.d("PacBot Update", "BFS: start "+coordX+" "+coordY);
         Direction pred[][] = new Direction[board.rows][board.cols];
         pred[startY][startX]=DEFAULT;//Just to stop the backtracking
-        //for (Direction dir : Direction.values()){
-        int r=Utils.random(0, 3), D = Direction.values().length;
+        //for (Direction dir : dirs){
+        int r=Utils.random(0, 3), D = dirs.length;
         int tileX = startX, tileY = startY; //unused
         for (int i=0; i<D; i++){
-            Direction dir = Direction.values()[ (i+r)%D ];
+            Direction dir = dirs[ (i+r)%D ];
             tileX = board.xFix( startX+dir.x );
             tileY = board.yFix( startY+dir.y );
             if( logic.couldPacGo(startX, startY, dir) ){
                 queue.add( new BFS_Queue_Node(tileX, tileY, dir) );
-            System.out.println("BFS: first gen "+tileX+" "+tileY+"\tfrom "+dir);
+                if(_Log.LOG_ACTIVE) _Log.d("PacBot Update", "BFS: first gen "+tileX+" "+tileY+"\tfrom "+dir);
                 pred[ tileY ][ tileX ] = dir;
             }
         }
         //BFS
         boolean found=false;
+        BFS_Queue_Node curr;
+        Vector vec, nextVec = new Vector(0, 0);
         while(!found /*&& !queue.isEmpty()*/ ){ //Should never be empty without finding
-            BFS_Queue_Node curr = queue.poll();
-            //System.out.println("BFS: examining "+curr.x+" "+curr.y+"\tfrom "+curr.dir);
-            Collectible element = board.elementIn(curr.x, curr.y);
+            curr = queue.poll();
+            vec = curr.vec;
+            //if(_Log.LOG_ACTIVE) _Log.d("PacBot Update", "BFS: examining "+curr.x+" "+curr.y+"\tfrom "+curr.dir);
+            Collectible element = board.elementIn(vec.x, vec.y);
             if( element == Collectible.Dot || element==Collectible.Energizer ){
                 found=true;
-                tileX = curr.x;
-                tileY = curr.y;
+                tileX = vec.x;
+                tileY = vec.y;
             }
             else{
                 r=Utils.random(0, 3);
-                //for (Direction dir : Direction.values()){
+                //for (Direction dir : dirs){
                 for (int i=0; i<D; i++){
-                    Direction dir = Direction.values()[ (i+r)%D ];
-                        if( pred[ board.yFix(curr.y+dir.y) ][ board.xFix(curr.x+dir.x) ]==null &&
-                            logic.couldPacGo(curr.x, curr.y, dir) ){
-                        queue.add( new BFS_Queue_Node(curr.x+dir.x, curr.y+dir.y, dir) );
-                        pred[board.yFix(curr.y+dir.y) ][ board.xFix(curr.x+dir.x)] = dir;
+                    Direction dir = dirs[ (i+r)%D ];
+                    nextVec.reset( board.xFix(vec.x+dir.x), board.yFix(vec.y+dir.y) );
+                    if( pred[ nextVec.y ][ nextVec.x ]==null &&
+                            logic.couldPacGo(vec.x, vec.y, dir) ){
+                        queue.add( new BFS_Queue_Node(nextVec.x, nextVec.y, dir) );
+                        pred[ nextVec.y ][ nextVec.x ] = dir;
                     }
                 }
             }
@@ -83,13 +87,18 @@ public class PacBot_WanderDirection_PelletBFS extends PacBot_WanderDirection_Get
         queue.clear();
         
         Direction dir;
-        //System.out.println("BFS: backtracking init: we re in "+tileX+" "+tileY+"\tend in "+coordX+" "+coordY);
+        if(_Log.LOG_ACTIVE) _Log.d("PacBot Update", "BFS: backtracking init: we re in "+tileX+" "+tileY+"\tend in "+startX+" "+startY);
         while (tileX!=startX || tileY!=startY){
-            dir = pred[ board.yFix(tileY) ][ board.xFix(tileX) ];
-            //System.out.println("BFS: backtracking "+tileX+" "+tileY+"\tfrom "+dir);
+            dir = pred[ tileY ][ tileX];
+            if(_Log.LOG_ACTIVE) _Log.d("PacBot Update", "BFS: backtracking "+tileX+" "+tileY+"\tgot going "+dir);
             path.addFirst( dir );
-            tileX += dir.opposite().x;
-            tileY += dir.opposite().y;
+            tileX = board.xFix(tileX + dir.opposite().x);
+            tileY = board.yFix(tileY + dir.opposite().y);
         }
+    }
+
+    @Override
+    void reset() {
+        path.clear();
     }
 }

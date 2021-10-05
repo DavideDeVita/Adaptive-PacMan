@@ -13,7 +13,6 @@ import static pacman.GhostPersonalState.*;
  */
 public class GameLogic {
     final Board board;
-    private final Game_PacMan pmg;
     
     //Agents
     final static int NUM_GHOSTS = 4,
@@ -22,79 +21,153 @@ public class GameLogic {
     public Ghost[] ghosts;
     
     //Game
-    private int dotsLeft;
+    public int dotsLeft, energizersLeft;
     int pac_lives;
-    private float frightTimer=0;
+    private float frightTimer=0f;
     private float timer=0f;
+    public float fullGameTimer=0f;
     public TimerState timerState;
+    private boolean pacmanCollectedADot = false;
+    private final Vector previousPacTile = new Vector(0, 0);
     
     //Features
-    final static int SPEED = 200; //units per second
+    final static int SPEED = 660; //units per second        //660
     private KeyListener keyListener=null;
     
-    //Custom Specific
-    LevelSpecifics levelSpecifics;
-    Ghost_UpTurn_Constraint g_ut_c;
-    Ghost_180Turn_Constraint g_180t_c;
-    Ghost_Force180Turn_Constraint g_force180t_c;
-    InkyReferenceGhost_Getter Irg_g;
+    //Custom Specifics
+    private Setup setup;
+    private LevelSpecifics lvl;
+    
+    //StateObservation
+    private StateObservation_Player playerObservation;
+    private StateObservation_Strategies agentsObservation;
 
-    GameLogic(Board board, Game_PacMan pmg, CustomSpecifics builder) {
+    GameLogic(Board board, Game_PacMan pmg, Setup builder) {
         this.board = board;
-        this.pmg=pmg;
         
-        this.levelSpecifics = builder.getLevelSpecific();
-        this.g_ut_c = builder.getUpTurn_Constraint();
-        this.g_180t_c = builder.getTurn180_Constraint();
-        this.g_force180t_c = builder.getForce180Turn_Constraint();
-        this.Irg_g = builder.getInkyReferenceGhost_Getter();
+        this.setup = builder;
+        this.lvl = builder.lvl;
         
-        this.dotsLeft=board.countDots();
-        this.pac_lives = builder.getPacLives();
+        this.dotsLeft = board.dots;
+        this.energizersLeft = board.energizers;
+        this.pac_lives = builder.pac_lives;
         this.timerState = TimerState.Scatter_1;
     }
+    
+    void setPlayerObservation(float period){
+        this.playerObservation = new StateObservation_Player(period);
+    }
+    void setAgentObservation(float period){
+        this.agentsObservation = new StateObservation_Strategies(period);
+    }
 
+    //Game Setting
     void restart() {
         pacman.resetPosition(14, 23, Left);
         ghosts[BLINKY].resetPosition(14, 11, Left);
         ghosts[PINKY].resetPosition(14, 14, Down);
         ghosts[INKY].resetPosition(13, 14, Up);
         ghosts[CLYDE].resetPosition(15, 14, Up);
+        frightAllGhosts(false);
         
         this.timerState = TimerState.Scatter_1;
         frightTimer = 0;
         timer = 0f;
     }
 
+    void reset() {
+        pac_lives = setup.pac_lives;
+        board.reset();
+        dotsLeft = board.dots;
+        energizersLeft = board.energizers;
+        
+        fullGameTimer=0f;
+        if(playerObservation!=null)        playerObservation.reset();
+        if(agentsObservation!=null)        agentsObservation.reset();
+        restart();
+    }
+    
+    void reset(int p, int d, int e, int l) {
+        reset();
+        p++;
+        fullGameTimer = (20.f * p) ;//- 1f;
+        
+        dotsLeft = board.reset(d, e);
+        energizersLeft = board.energizers-e;
+        
+        timerState = TimerState.stateAt(fullGameTimer, lvl);
+        for(int g=0; g<NUM_GHOSTS; g++)
+            ghosts[g].delayedStart(fullGameTimer);
+        
+        pac_lives = l+1;
+    }
+    void reset(int p, int c, int l) {
+        reset();
+        p++;
+        fullGameTimer = (20.f * p) ;//- 1f;
+        
+        int e = Utils.random(0, 4);
+        dotsLeft = board.reset(c, e);
+        energizersLeft = board.energizers-e;
+        
+        timerState = TimerState.stateAt(fullGameTimer, lvl);
+        for(int g=0; g<NUM_GHOSTS; g++)
+            ghosts[g].delayedStart(fullGameTimer);
+        
+        pac_lives = l+1;
+    }
+    void reset(int p, int c) {
+        reset();
+        p++;
+        fullGameTimer = (20.f * p) ;//- 1f;
+        
+        int e = Utils.random(0, 4);
+        dotsLeft = board.reset(c, e);
+        energizersLeft = board.energizers-e;
+        
+        timerState = TimerState.stateAt(fullGameTimer, lvl);
+        for(int g=0; g<NUM_GHOSTS; g++)
+            ghosts[g].delayedStart(fullGameTimer);
+        
+        pac_lives = Utils.random(1, 3);
+    }
+
     void createAgents() {
         ghosts = new Ghost[NUM_GHOSTS];
-            ghosts[BLINKY] = new Ghost("Blinky", this, 14, 11, levelSpecifics.get_Activate_Blinky(), Left, Color.RED);
-            ghosts[BLINKY].setScatterTile( CustomSpecifics.std_Blinky_Scatter(this) );
-            ghosts[BLINKY].setChaseTile( CustomSpecifics.std_Blinky_Chase(this) );
+            ghosts[BLINKY] = new Ghost("Blinky", this, 14, 11, lvl.ACTIVATE_BLINKY, Left, Color.RED);
+            ghosts[BLINKY].setTileGetters(setup.blinky_S, setup.blinky_C);
             ghosts[BLINKY].setCruiseElroy( true );
             
-            ghosts[PINKY] = new Ghost("Pinky", this, 14, 14, levelSpecifics.get_Activate_Pinky(), Down, Color.PINK);
-            ghosts[PINKY].setScatterTile( CustomSpecifics.std_Pinky_Scatter(this) );
-            ghosts[PINKY].setChaseTile( CustomSpecifics.std_Pinky_Chase(this) );
+            ghosts[PINKY] = new Ghost("Pinky", this, 14, 14, lvl.ACTIVATE_PINKY, Down, Color.PINK);
+            ghosts[PINKY].setTileGetters(setup.pinky_S, setup.pinky_C);
             
-            ghosts[INKY] = new Ghost("Inky", this, 13, 14, levelSpecifics.get_Activate_Inky(), Up, Color.CYAN);
-            ghosts[INKY].setScatterTile( CustomSpecifics.std_Inky_Scatter(this) );
-            ghosts[INKY].setChaseTile( CustomSpecifics.std_Inky_Chase(this) );
+            ghosts[INKY] = new Ghost("Inky", this, 13, 14, lvl.ACTIVATE_INKY, Up, Color.CYAN);
+            ghosts[INKY].setTileGetters(setup.inky_S, setup.inky_C);
             
-            ghosts[CLYDE] = new Ghost("Clyde", this, 15, 14, levelSpecifics.get_Activate_Clyde(), Up, Color.ORANGE);
-            ghosts[CLYDE].setScatterTile( CustomSpecifics.std_Clyde_Scatter(this) );
-            ghosts[CLYDE].setChaseTile( CustomSpecifics.pacmanNearestDot_Clyde_Chase(this) );
-        pacman = new PacMan_Bot("PacMan", this, 14, 23, Left, 4, 
+            ghosts[CLYDE] = new Ghost("Clyde", this, 15, 14, lvl.ACTIVATE_CLYDE, Up, new Color(255,126,0)); //, Color.ORANGE
+            ghosts[CLYDE].setTileGetters(setup.clyde_S, setup.clyde_C);
+            
+        pacman = new PacMan_Bot("PacMan", this, 14, 24, Left, 4f, 2f, 
             new PacBot_WanderDirection_PelletBFS(this),
-                new PacBot_EscapeDirection_BFS(this));
+                new PacBot_EscapeDirection_BFS_n(this, 4));
         //pacman = new PacMan_Player("PacMan", this, 14, 23, Left);
     }
 
+    void setPacMan (PacMan pac){
+        this.pacman = pac;
+    }
+    //Game Updates
     /**Returns <code>false</code> if Game is Over
      */
     GameState update(float deltaTime) {   
+        fullGameTimer+=deltaTime;
+        
+        if(playerObservation!=null)        playerObservation.log(this, deltaTime);
+        if(agentsObservation!=null)        agentsObservation.log(this, deltaTime);
+        
         updateState(deltaTime);
-        GameState gs=GameState.Play;
+        
+        GameState gs;
         //Update Ghosts
         for(int g=0; g<NUM_GHOSTS; g++){
             ghosts[g].update(deltaTime);
@@ -114,7 +187,7 @@ public class GameLogic {
         if( !frightened() ) {
             if (!timerState.isLast() ){
                 timer+=deltaTime;
-                if ( timer >= timerState.timerStateDuration(levelSpecifics) ){
+                if ( timer >= timerState.timerStateDuration(lvl) ){
                     timer=0f;
                     force_180turn();
                     timerState=timerState.next();
@@ -130,10 +203,38 @@ public class GameLogic {
         }
     }
 
+    public StateObservation_Player.PlayerState observeState_Player() {
+        StateObservation_Player.PlayerState state = null;
+        if ( playerObservation.shouldObserve() ){
+                if(_Log.LOG_ACTIVE) _Log.w("State Observation", "fullGameTimer: "+fullGameTimer
+                        + "\n"+playerObservation.toString());
+            //..
+            state = playerObservation.getState();
+            playerObservation.reset();
+        }
+        return state;
+    }
+    public StateObservation_Strategies.StrategyState observeState_Strategies() {
+        StateObservation_Strategies.StrategyState state = null;
+        if ( agentsObservation.shouldObserve() ){
+                if(_Log.LOG_ACTIVE) _Log.w("State Observation", "fullGameTimer: "+fullGameTimer
+                        + "\n"+agentsObservation.toString());
+            //..
+            state = agentsObservation.getState();
+            agentsObservation.reset();
+        }
+        return state;
+    }
+    
+    public boolean shouldObserve(){
+        return playerObservation.shouldObserve();
+    }
+
+    //Functionalities
     public void force_180turn(){
-        if(g_force180t_c.constraintActive())
+        if(setup.force180Turn_Constraint.constraintActive())
             for(int i=0; i<NUM_GHOSTS; i++)
-                if( ghosts[i].state!=GhostPersonalState.Eaten )
+                if( ghosts[i].state==GhostPersonalState.Out )
                     ghosts[i].turn180();
     }
 
@@ -142,13 +243,14 @@ public class GameLogic {
                 ghost.coord_Y() == pacman_coord_Y() ){
             if( ghost.isFrightened )
                 eatGhost(ghost);
-            else
+            else if(ghost.state!=Eaten)
                 return eatPacMan();
         }
         if ( ghost.state==Exiting &&
-                board.elementIn(ghost.coord_X(), ghost.coord_Y())==Collectible.OutDoor ){
+                board.elementIn(ghost.coord_X(), ghost.coord_Y())==Collectible.OutDoor && ghost.canTurn90(ghost.dir)){
             ghost.state=Out;
-            ghost.dir = Left; //This is to optimize the decision process; I could ptherwise put a clause in the update dir process
+            ghost.hasToChooseDir=true;
+            //ghost.dir = Left; //This is to optimize the decision process; I could otherwise put a clause in the update dir process
         }
         else if ( ghost.state==Eaten &&
                 board.elementIn(ghost.coord_X(), ghost.coord_Y())==Collectible.House ){
@@ -165,29 +267,41 @@ public class GameLogic {
                 ghost.coord_Y() == pacman.coord_Y() ){
                 if( ghost.isFrightened )
                     eatGhost(ghost);
-                else
+                else if(ghost.state!=Eaten)
                     return eatPacMan();
             }
         }
-        switch (board.elementIn(pacman.coord_X(), pacman.coord_Y())){
+        Vector pacTile = pacman.tile();
+        switch (board.elementIn(pacTile)){
             case Energizer:
-                frightTimer = levelSpecifics.get_Fright_Time()*1f;
+                frightTimer = lvl.get_Fright_Time()*1f;
                 frightAllGhosts( true );
                 force_180turn();
+                energizersLeft--;
+                //No Break; !!
             case Dot:
                 dotsLeft--;
                 board.eatPellet(pacman.coord_X(), pacman.coord_Y());
+                pacmanCollectedADot=true;
                 if(dotsLeft==0) return GameState.Win;
                 break;
             case Fruit:
                 break;
+            default:
+                if(!previousPacTile.equals(pacTile)){
+                    //_Log.a("Pac changed position: prev "+previousPacTile+"\t curr "+pacTile+"\t \t pacCollected? "+pacmanCollectedADot);
+                    pacmanCollectedADot=false;
+                }
         }
+        previousPacTile.reset(pacTile);
         return GameState.Play;
     }
 
     private void eatGhost(Ghost ghost) {
-        ghost.turn180();
-        ghost.state = Eaten;
+        if( ghost.state!=Eaten ){
+            ghost.turn180();
+            ghost.state = Eaten;
+        }
     }
 
     private GameState eatPacMan() {
@@ -201,13 +315,15 @@ public class GameLogic {
     }
 
     private void frightAllGhosts( boolean setTo ) {
+        frightColor = Color.BLUE;
+        blinksLeft = 2*fright_blinks_number;
         for (int g=0; g<ghosts.length; g++)
             ghosts[g].isFrightened=setTo;
     }
     
     int getCruiseElroyLevel() {
-        if ( dotsLeft <= levelSpecifics.get_Elroy_1_Activation() ){
-            if ( dotsLeft <= levelSpecifics.get_Elroy_2_Activation() )
+        if ( dotsLeft <= lvl.get_Elroy_1_Activation() ){
+            if ( dotsLeft <= lvl.get_Elroy_2_Activation() )
                 return 2;
             return 1;
         }
@@ -215,7 +331,11 @@ public class GameLogic {
     }
 
     boolean cruiseElroyChase() {
-        return getCruiseElroyLevel() >= levelSpecifics.get_Elroy_AlwaysChase() ;
+        return getCruiseElroyLevel() >= lvl.get_Elroy_AlwaysChase() ;
+    }
+    
+    boolean eloryChasesOnScatter(){
+        return setup.elroyChasesOnScatter_Constraint.constraintActive();
     }
     
     //Agents utilities
@@ -227,11 +347,25 @@ public class GameLogic {
     }
 
     public Ghost InkyReferenceGhost() {
-        return ghosts[ Irg_g.getInkyReferenceGhost(this) ];
+        return ghosts[ setup.inkyReferenceGhost_Getter.getInkyReferenceGhost(this) ];
     }
     
+    //Blinking
+    private final int fright_blinks_number = 4;
+    private int blinksLeft = 2*fright_blinks_number;
+    private Color frightColor=Color.BLUE;
+    private final float start_blinking_ratio = 0.25f; //starts blinking on the last 25% of fright duration
+    
     public Color frightenedColor() {
-        return Color.BLUE;
+        float startBlinking = lvl.get_Fright_Time()*start_blinking_ratio;
+        if(frightTimer <= startBlinking ){
+            if(frightTimer <= startBlinking * (blinksLeft/(2f*fright_blinks_number)) ){
+                frightColor = (frightColor==Color.BLUE) ? Color.WHITE : Color.BLUE; 
+                blinksLeft--;
+            }
+            //return frightColor;
+        }
+        return frightColor;
     }
     public Color eatenColor() {
         return Color.WHITE;
@@ -247,48 +381,52 @@ public class GameLogic {
             case House:
             case Door:
             case Tunnel:
-                //System.out.println("Ghost Speed: GHOST_TUNNEL_SPEED"+getSpeed(LevelSpecifics.GHOST_TUNNEL_SPEED));
-                return getSpeed(LevelSpecifics.GHOST_TUNNEL_SPEED);
+                //if(_Log.LOG_ACTIVE) _Log.v("Ghost Speed", "GHOST_TUNNEL_COEFF"+getSpeed(LevelSpecifics.GHOST_TUNNEL_COEFF));
+                //TunnelSpeed = GhostSpeed * GHOST_TUNNEL_COEFF
+                if(_Log.LOG_ACTIVE) _Log.d(ghost+" Speed", lvl.get_Ghost_Tunnel_Speed()+" tunnel");
+                return SPEED * lvl.get_Ghost_Tunnel_Speed();
             default:
-                if( ghost.isFrightened )
-                    return getSpeed(LevelSpecifics.FRIGHT_GHOST_SPEED);
+                if( ghost.isFrightened ){
+                    if(_Log.LOG_ACTIVE) _Log.d(ghost+" Speed", lvl.get_Ghost_Fright_Speed()+" fright");
+                    return SPEED * lvl.get_Ghost_Fright_Speed();
+                }
                 else if (ghost.isCruiseElroy) {
                     switch (getCruiseElroyLevel()){
-                        case 1:     return getSpeed(LevelSpecifics.ELROY_1_SPEED);
-                        case 2:     return getSpeed(LevelSpecifics.ELROY_2_SPEED);
-                        default:    return getSpeed(LevelSpecifics.GHOST_SPEED);
+                        case 1:     return SPEED * lvl.get_Elroy_1_Speed();
+                        case 2:     return SPEED * lvl.get_Elroy_2_Speed();
+                        default:    return SPEED * lvl.get_Ghost_Speed();
                     }
                 }
-                else
-                    return getSpeed(LevelSpecifics.GHOST_SPEED);
+                else{
+                    if(_Log.LOG_ACTIVE) _Log.d(ghost+" Speed", lvl.get_Ghost_Speed()+" //"+board.elementIn(x, y));
+                    return SPEED * lvl.get_Ghost_Speed();
+                }
         }
     }
     float agentSpeed(PacMan pacman) {
         int x=pacman_coord_X(), y=pacman_coord_Y();
         if( frightened() ){
-            switch(board.elementIn(x, y)){
-                case Dot:
-                case Energizer:
-                    return getSpeed(LevelSpecifics.FRIGHT_PACMAN_DOTS_SPEED);
-                default:
-                    return getSpeed(LevelSpecifics.FRIGHT_PACMAN_SPEED);
+            if(pacmanCollectedADot){
+                    //_Log.a("PacSpeed", "Dot Fright in "+pacman.tile());
+                    return SPEED * lvl.get_PacMan_Fright_Dot_Speed();
+            }
+            else{
+               // _Log.a("PacSpeed", "Empty Firght in "+pacman.tile());
+                return SPEED * lvl.get_PacMan_Fright_Speed();
             }
         }
         else{
-            switch(board.elementIn(x, y)){
-                case Dot:
-                case Energizer:
-                    //System.out.println("PacMan Speed: PACMAN_DOTS_SPEED"+getSpeed(LevelSpecifics.PACMAN_DOTS_SPEED));
-                    return getSpeed(LevelSpecifics.PACMAN_DOTS_SPEED);
-                default:
-                    //System.out.println("PacMan Speed: PACMAN_SPEED"+getSpeed(LevelSpecifics.PACMAN_SPEED));
-                    return getSpeed(LevelSpecifics.PACMAN_SPEED);
+            if(pacmanCollectedADot){
+                    if(_Log.LOG_ACTIVE) _Log.d("PacSpeed", lvl.get_PacMan_Dot_Speed()+" dot speed");
+                    return SPEED * lvl.get_PacMan_Dot_Speed();
+            }
+            else{
+                //_Log.a("PacSpeed", "Empty in "+pacman.tile());
+                //_Lov.v("PacMan Speed","PACMAN_SPEED"+getSpeed(LevelSpecifics.PACMAN_SPEED));
+                if(_Log.LOG_ACTIVE) _Log.d("Pacman Speed", lvl.get_PacMan_Speed()+"");
+                return SPEED * lvl.get_PacMan_Speed();
             }
         }
-    }
-    
-    int getSpeed(int specificIndex){
-        return (int)( SPEED * levelSpecifics.get(specificIndex) );
     }
     
     public boolean canGo(Agent agent, Direction dir){
@@ -299,13 +437,13 @@ public class GameLogic {
     }
     public boolean canGo(Ghost ghost, Direction dir){
         Path path = board.pathIn( ghost.coord_X(), ghost.coord_Y() );
-        System.out.println("\tcan "+ghost+" go "+dir+"\tdir: "+ghost.dir+"\tlastDir: "+ghost.lastDir);
+        if(_Log.LOG_ACTIVE) _Log.i("Ghost can go?", "\tcan "+ghost+" go "+dir+"\tdir: "+ghost.dir+"\tlastDir: "+ghost.lastDir);
         if( ghost.state!=GhostPersonalState.Exiting && 
                 (ghost.dir.opposite()==dir || ghost.lastDir.opposite()==dir)
-                && g_180t_c.constraintActive())
+                && setup.turn180_Constraint.constraintActive())
             return false;
         
-        if( path==Path.Horizontal_Up_Exc && !ghost.isFrightened && dir==Up && g_ut_c.constraintActive() )
+        if( path==Path.Horizontal_Up_Exc && !ghost.isFrightened && dir==Up && setup.upTurn_Constraint.constraintActive() )
             return false;
         
         /*if(dir==Down && board.elementIn( ghost.coord_X(), ghost.coord_Y()+1)==Door )
@@ -326,6 +464,14 @@ public class GameLogic {
         boolean isDoor = board.elementIn(coordX+dir.x, coordY+dir.y)==Door;
         return path.canGo(dir) && !isDoor;
     }
+    public boolean couldGhostGo(Ghost ghost, int coordX, int coordY, Direction dir){
+        Path path = board.pathIn( coordX, coordY );
+        return path.canGo(dir);
+    }
+    
+    public float distance(int x1, int y1, int x2, int y2){
+        return setup.distance.eval(x1, y1, x2, y2);
+    }
 
     /**Returns he nearest ghost to agent*/
     Ghost nearestGhost(Agent agent) {
@@ -345,13 +491,13 @@ public class GameLogic {
         Ghost nearest=null, ghost;
         for(int g=0; g<NUM_GHOSTS; g++){
             ghost = ghosts[g];
-            if( ghost.isAThreat() )
+            if( ghost.isNotAThreat() )
                 continue;
-            
-            curr = Utils.euclidean_dist2( agent, ghosts[g] );
+            curr = Utils.euclidean_dist2( agent, ghost );
+            //_Log.a("Nearest Alive", ghost+"("+ghost.coord_X()+" "+ghost.coord_Y()+") from Pac("+agent.coord_X()+" "+agent.coord_Y()+")="+curr);
             if ( curr<min ){
                 min=curr;
-                nearest = ghosts[g];
+                nearest = ghost;
             }
         }
         return nearest;
@@ -363,5 +509,26 @@ public class GameLogic {
     void notifyKeyTiped(KeyEvent ke) {
         if(keyListener!=null)
             keyListener.keyTyped(ke);
+    }
+    
+    //Simulation
+    public void setSetup(Setup builder){
+        this.setup = builder;
+        this.lvl = builder.lvl;
+        ghosts[BLINKY].setTileGetters(setup.blinky_S, setup.blinky_C);
+        ghosts[PINKY].setTileGetters(setup.pinky_S, setup.pinky_C);
+        ghosts[INKY].setTileGetters(setup.inky_S, setup.inky_C);
+        ghosts[CLYDE].setTileGetters(setup.clyde_S, setup.clyde_C);
+    }
+    public Setup getSetup(){
+        return setup;
+    }
+    
+    public void setGhost(int gId, Ghost ghost){
+        ghosts[gId] = ghost;
+    }
+    
+    public boolean firstLife(){
+        return pac_lives == setup.pac_lives;
     }
 }

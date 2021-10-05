@@ -36,3 +36,10 @@ class Ghost_Force180Turn_Constraint extends Constraint{
         super(active);
     }
 }
+
+class ElroyChasesOnScatter_Constraint extends Constraint{
+
+    public ElroyChasesOnScatter_Constraint(boolean active) {
+        super(active);
+    }
+}

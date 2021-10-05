@@ -1,5 +1,6 @@
 package pacman;
 
+import java.util.Objects;
 import static pacman.Collectible.Wall;
 import static pacman.Direction.*;
 
@@ -41,7 +42,7 @@ public abstract class Agent {
     
     public void resetPosition(int coord_x, int coord_y, Direction dir){
         //I trust that is not a wall
-        this.x = board.coord_to_logicalTile_X(coord_x);
+        this.x = board.coord_to_logicalHalfTile_X(coord_x); //this.x = board.coord_to_logicalTile_X(coord_x);
         this.y = board.coord_to_logicalHalfTile_Y(coord_y);
         this.lastCoord_X = coord_x;
         this.lastCoord_Y = coord_y;
@@ -108,20 +109,42 @@ public abstract class Agent {
 
     private void checkPositionIsNotAWall(){
         if ( this.board.elementIn( coord_X(), coord_Y() )==Wall ){
-            System.out.println(this+" went in wall in "+coord_X()+" "+coord_Y());
-            System.out.println(this+" last coord were "+lastCoord_X+" "+lastCoord_Y+"\ndirection was "+dir);
+            _Log.a("Wall Error", this+" went in wall in "+coord_X()+" "+coord_Y()
+                    +"\nlast coord were "+lastCoord_X+" "+lastCoord_Y+"\tdirection was "+dir);
             x = this.board.coord_to_logicalHalfTile_X(lastCoord_X);
             y = this.board.coord_to_logicalHalfTile_Y(lastCoord_Y);
-            System.out.println(this+"set to logic "+x+" "+y+"");
-            System.out.println(this+" set to "+coord_X()+" "+coord_Y()+"\n");
-            //onResetFromWall();
+            if(_Log.LOG_ACTIVE) _Log.w(this+"set to logic "+x+" "+y+
+                    "\n\tset to "+coord_X()+" "+coord_Y()+"\n");
+            onResetFromWall();
         }
         else{
             lastCoord_X = coord_X();
             lastCoord_Y = coord_Y();
-            System.out.println(this+" updated Last Coord "+lastCoord_X+" "+lastCoord_Y);
+            if(_Log.LOG_ACTIVE) _Log.i("Last Coord Update", this+" updated Last Coord "+lastCoord_X+" "+lastCoord_Y);
         }
     }
 
     protected abstract void onResetFromWall();
+
+    @Override
+    public int hashCode() {
+        return name.hashCode();
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == null || getClass()!=obj.getClass()) {
+            return false;
+        }
+        final Agent other = (Agent) obj;
+        return this.name.equals(other.name);
+    }
+
+    public Vector tile() {
+        return new Vector(coord_X(), coord_Y());
+    }
+    
+    public boolean canTurn90(Direction dir){
+        return board.canTurn90(x, y, dir);
+    }
 }

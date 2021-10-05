@@ -34,4 +34,8 @@ public enum Direction {
         }
         return opposite;
     }
+
+    public boolean isPerpendicularTo(Direction dir) {
+        return this!=dir && this.opposite()!=dir;
+    }
 }

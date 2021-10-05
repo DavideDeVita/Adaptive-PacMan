@@ -10,22 +10,34 @@ import static pacman.Collectible.Wall;
  * @author Falie
  */
 public abstract class PacMan extends Agent{
+    protected Direction tryDir;
 
     public PacMan(String name, GameLogic logic, int startX, int startY, Direction startDir) {
         super(name, logic, startX, startY, startDir);
+        tryDir=startDir;
+    }
+
+    @Override
+    void updateDirection() {
+        //_Log.a("PacBot", "tryD "+tryDir+". dir "+dir+".");
+        if(tryDir!=dir && logic.canGo(this, tryDir) ){
+            if(!tryDir.isPerpendicularTo(dir) || canTurn90(tryDir) )
+                dir=tryDir;
+        }
     }
 
     @Override
     public void updatePosition(float deltaSeconds){
         int undirectedMovement = (int)( (deltaSeconds+deltaSecondsCarry) * logic.agentSpeed(this));
-        if(undirectedMovement==0){
+        //_Log.a("Pac Move", undirectedMovement+" steps");
+        if(undirectedMovement<2){
             deltaSecondsCarry+=deltaSeconds;
             return;
         }
         deltaSecondsCarry=0;
         
-        int nextX = (x + dir.x * undirectedMovement + board.m_width)%board.m_width,
-                nextY = (y + dir.y * undirectedMovement + board.m_height)%board.m_height;
+        int nextX = board.capMovement_X(this, x + dir.x * undirectedMovement ),
+                nextY = board.capMovement_Y(this, y + dir.y * undirectedMovement);
         int coord_x = coord_X(), 
                 coord_y = coord_Y();
         int halfTile_X = board.coord_to_logicalHalfTile_X(coord_x),//.halfTile_X(nextX),

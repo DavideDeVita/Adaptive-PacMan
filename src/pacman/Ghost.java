@@ -3,6 +3,7 @@ package pacman;
 import java.awt.Color;
 import static java.lang.Integer.max;
 import static java.lang.Integer.min;
+import static pacman.Collectible.OutDoor;
 import static pacman.Collectible.Wall;
 import static pacman.Direction.*;
 import static pacman.GhostPersonalState.*;
@@ -13,20 +14,22 @@ import static pacman.GhostPersonalState.*;
  */
 public class Ghost extends Agent{
     public GhostPersonalState state;
-    private final float startAfter;
-    private float startAfter_yetToWait;
+    private final int startAfter_INDEX;
+    private Float startAfter_yetToWait=null;
     private final Color color;
     public boolean isFrightened = false, 
             isCruiseElroy=false, hasToChooseDir=true;
     public ScatterTargetGetter scatterTile;
     public ChaseTargetGetter chaseTile;
     public Direction lastDir;
+    public State lastTargetGetter=null;
 
-    public Ghost(String name, GameLogic logic, int startX, int startY, float startAfter, Direction dir, Color color) {
+    public Ghost(String name, GameLogic logic, int startX, int startY, int startAfter_INDEX, Direction dir, Color color) {
         super(name, logic, startX, startY, dir);
         lastDir=dir;
         this.color=color;
-        this.startAfter = this.startAfter_yetToWait = startAfter;
+        this.startAfter_INDEX = startAfter_INDEX;
+        //this.startAfter_yetToWait = getStartAfter_fromLvl();
         this.state = (board.elementIn(startX, startY)==Collectible.OutDoor) ? Out : Housed;
     }
 
@@ -34,23 +37,27 @@ public class Ghost extends Agent{
     public void resetPosition(int coord_x, int coord_y, Direction dir) {
         super.resetPosition(coord_x, coord_y, dir); //To change body of generated methods, choose Tools | Templates.
         this.lastDir=dir;
-        this.startAfter_yetToWait = this.startAfter;
+        this.startAfter_yetToWait = getStartAfter_fromLvl();
         this.state = (board.elementIn(coord_x, coord_y)==Collectible.OutDoor) ? Out : Housed;;
         this.hasToChooseDir=true;
-        System.out.println("Reset "+this+" state");
+        if(_Log.LOG_ACTIVE) _Log.d("Ghost.java", "Reset "+this+" state");
     }
 
     @Override
     public void update(float deltaSeconds) {
-        System.out.println(this+" Start Update:\t state: "+state + (hasToChooseDir?" has to choose":""));
+        if(_Log.LOG_ACTIVE) _Log.d("Ghost Update", this+" Start Update:\t state: "+state + (hasToChooseDir?" has to choose":""));
+        if(startAfter_yetToWait==null)
+            this.startAfter_yetToWait = getStartAfter_fromLvl();
         if(startAfter_yetToWait>=0){
             startAfter_yetToWait-=deltaSeconds;
+            if(!logic.firstLife())
+                startAfter_yetToWait-=deltaSeconds;
             if(startAfter_yetToWait<0)
                 state=Exiting;
         }
-        //System.out.println(this+" state: "+state+"\t dir: "+dir);
+        //if(_Log.LOG_ACTIVE) _Log.d("Ghost Update", (this+" state: "+state+"\t dir: "+dir);
         super.update(deltaSeconds); //To change body of generated methods, choose Tools | Templates.
-        System.out.println(this+" end Update\tstate: "+state+"\t dir: "+dir+"\n");
+        if(_Log.LOG_ACTIVE) _Log.d("Ghost Update", this+" end Update\tstate: "+state+"\t dir: "+dir+"\n");
     }
     
     @Override
@@ -87,35 +94,44 @@ public class Ghost extends Agent{
                     dir = this.cornerTurn(path);
             }
         }
+        if(dir.isPerpendicularTo(lastDir) && !canTurn90(dir)){
+            dir=lastDir;
+            hasToChooseDir = true;
+            
+        }
     }
     
     protected Vector getTarget(){
         Vector target;
         switch ( getGlobalState() ){
             case Chase:
-                return chaseTile.getChaseTarget(this); //CHASE
+                target =  chaseTile.getChaseTarget(logic, this); //CHASE
+                lastTargetGetter=State.Chase;
+                return target;
             case Scatter:
             default:
-                return scatterTile.getScatterTarget(this);
+                target = scatterTile.getScatterTarget(logic, this);
+                lastTargetGetter=State.Scatter;
+                return target;
         }
     }
 
     private Direction chooseDirection(Vector target) {
-        int coordX=coord_X(), coordY=coord_Y();
+        Vector self = tile();
         Direction best=dir;
         double min=Double.MAX_VALUE, currDist;
-        System.out.println(this+"Target\t"+(target.x)+" "+(target.y));
+        if(_Log.LOG_ACTIVE) _Log.d("Ghost Update", this+"Target\t"+(target.x)+" "+(target.y));
         for(Direction d : Direction.values()){
             if(logic.canGo(this, d)){
-                currDist = Utils.euclidean_dist2(target.x, target.y, coordX+d.x, coordY+d.y);
-                System.out.println("can go "+d+".\t"+(coordX+d.x)+" "+(coordY+d.y)+" dists "+currDist);
+                currDist = logic.distance(target.x, target.y, self.x+d.x, self.y+d.y);
+                if(_Log.LOG_ACTIVE) _Log.d("Ghost Update", "can go "+d+".\t"+(self.x+d.x)+" "+(self.y+d.y)+" dists "+currDist);
                 if(currDist<min){
                     min=currDist;
                     best=d;
                 }
             }
         }
-        System.out.println("best "+best);
+        if(_Log.LOG_ACTIVE) _Log.d("Ghost Update", "best "+best);
         return best;
     }
 
@@ -132,6 +148,13 @@ public class Ghost extends Agent{
                 canGo[i]=false;
             i++;
         }
+            if(options==0){
+                _Log.a("Random Error", this+" ("+state+". fright? "+isFrightened+") in "+coordX+" "+coordY+": "+board.elementIn(coordX, coordY)+"\n"
+                        + "Up: "+board.elementIn(coordX, coordY-1)+"\n"
+                        + "Left: "+board.elementIn(coordX-1, coordY)+"\n"
+                        + "Down: "+board.elementIn(coordX, coordY+1)+"\n"
+                        + "Right: "+board.elementIn(coordX+1, coordY)+"\n");
+            }
         int r=Utils.random(0, options-1);
         i=0;
         while(r>=0){
@@ -144,17 +167,17 @@ public class Ghost extends Agent{
 
     @Override
     public void updatePosition(float deltaSeconds){
-        int undirectedMovement = (int)( deltaSeconds * logic.agentSpeed(this));
-        
-        if(undirectedMovement==0){
+        int undirectedMovement = (int)( (deltaSeconds+deltaSecondsCarry) * logic.agentSpeed(this));
+        //_Log.a(this+" Move", undirectedMovement+" steps");
+        if(undirectedMovement<2){
             deltaSecondsCarry+=deltaSeconds;
             return;
         }
         deltaSecondsCarry=0;
         
-        int nextX = (x + dir.x * undirectedMovement + board.m_width)%board.m_width,
-                nextY = (y + dir.y * undirectedMovement + board.m_height)%board.m_height;
-        int coord_X = coord_X(), coord_Y = coord_Y();
+        int nextX = board.capMovement_X(this, x + dir.x * undirectedMovement ),
+                nextY = board.capMovement_Y(this, y + dir.y * undirectedMovement);
+        int coord_X = coord_X(), coord_Y = coord_Y(); //Old Coords
         int halfTile_X = board.coord_to_logicalHalfTile_X(coord_X),//.halfTile_X(nextX),
                 halfTile_Y = board.coord_to_logicalHalfTile_Y(coord_Y);//.halfTile_Y(nextY);
         switch(dir){
@@ -201,11 +224,8 @@ public class Ghost extends Agent{
             return color;
     }
 
-    public void setScatterTile(ScatterTargetGetter scatterTile) {
+    void setTileGetters(ScatterTargetGetter scatterTile, ChaseTargetGetter chaseTile) {
         this.scatterTile = scatterTile;
-    }
-
-    public void setChaseTile(ChaseTargetGetter chaseTile) {
         this.chaseTile = chaseTile;
     }
     
@@ -218,19 +238,35 @@ public class Ghost extends Agent{
     }
 
     public void turn180() {
-        System.out.println(this+" turns 180 dir was "+dir+". lastDir was "+lastDir);
-        this.dir = dir.opposite();
-        this.lastDir = lastDir.opposite();
+        if(_Log.LOG_ACTIVE) _Log.d("Ghost.java", this+" turns 180 dir was "+dir+". lastDir was "+lastDir);
+        if(board.elementIn(tile())==OutDoor && dir==Up){
+            this.dir=Right;
+            this.lastDir=Right;
+        }
+        else{
+            this.dir = dir.opposite();
+            this.lastDir = lastDir.opposite();
+        }
         this.hasToChooseDir=true;//aggiunto dopo
     }
 
-    public boolean isAThreat() {
-        return isFrightened || state==Housed || state==Eaten;
+    public boolean isNotAThreat() {
+        return isFrightened || state!=Out;
     }
 
     @Override
     protected void onResetFromWall() {
         this.hasToChooseDir=true;
         //dir and lastDir can be left like this? suppose so
+    }
+    
+    public void delayedStart(float deltaSeconds){
+        startAfter_yetToWait= getStartAfter_fromLvl() - deltaSeconds;
+        if(startAfter_yetToWait<0)
+            state=Exiting;
+    }
+    
+    private float getStartAfter_fromLvl(){
+        return logic.getSetup().get_lvl_stat_index(startAfter_INDEX);
     }
 }

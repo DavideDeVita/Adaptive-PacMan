@@ -26,6 +26,11 @@ class Vector {
         this.x = x;
         this.y = y;
     }
+
+    @Override
+    public String toString() {
+        return x+" "+y;
+    }
     
     @Override
     public Vector clone(){
@@ -39,5 +44,10 @@ class Vector {
         }
         final Vector other = (Vector) obj;
         return this.x==other.x && this.y==other.y;
+    }
+
+    public void add(int x, int y) {
+        this.x += x;
+        this.y += y;
     }
 }
