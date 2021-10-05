@@ -1,1 +1,1 @@
-Questa è la versione offline di PacMan che servirà per l'addestramento offline
+This directory, contains the source code of the Adaptive PacMan i designed for my Master's degree dissertation
