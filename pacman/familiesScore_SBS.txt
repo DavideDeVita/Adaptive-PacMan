@@ -1,0 +1,67 @@
+Ghost Speed -5%:0.475
+Ghost Speed -7.5%:0.3767
+Ghost Speed -2.5%:0.6
+Ghost Speed +0%:0.6775
+Ghost Speed +2.5%:0.755
+Ghost Speed +5%:0.8
+not allowed upTurns:0.45
+allowed upTurns:0.65
+Euclid2 distance eval:0.5334
+Manhattan distance eval:0.4428
+Fright Time 5s:0.4484
+Fright Time 5.5s:0.3815
+Fright Time 4.5s:0.5576
+Fright Time 4s:0.6622
+Elroy1_DL 20:0.4154
+Elroy1_DL 30:0.516
+Elroy1_DL 50:0.5843
+Elroy1_DL 70:0.6554
+Elroy1_DL 100:0.7547
+Elroy chases on lvl1:0.5534
+Elroy chases on lvl2:0.3768
+Elroy doesn't chase:0.2582
+Blinky Chase Std:0.5524
+Blinky Chase Roam 2:0.4554
+Blinky Chase Roam 4:0.3901
+Blinky Chase Roam 5:0.3215
+Blinky Scatter Std:0.5
+Blinky Scatter Rand(Up Right):0.5252
+Blinky Scatter Rand(House NE):0.4704
+Blinky Scatter Rand(Around House):0.4684
+Pinky Chase Std:0.52
+Pinky Chase Std(2):0.5495
+Pinky Chase Std(6):0.4308
+Pinky Chase Std(8):0.3796
+Pinky Chase BugFix:0.5643
+Pinky Chase BugFix(6):0.4873
+Pinky Chase NextIntersection:0.7
+Pinky Scatter Std:0.5
+Pinky Scatter Rand(Up Left):0.5297
+Pinky Scatter Rand(House NW):0.4718
+Pinky Scatter Rand(Around House):0.4692
+Inky Chase Std:0.52
+Inky Chase Std(5):0.4397
+Inky Chase Std(6):0.388
+Inky Chase BugFix(0):0.4892
+Inky Chase BugFix(6):0.4283
+Inky Chase Clipped(2.5):0.62
+Inky Chase Clipped(4):0.5762
+Inky Chase Clipped(6):0.5225
+Inky Scatter Std:0.5
+Inky Scatter Rand(Down Right):0.5284
+Inky Scatter Rand(House SE):0.4874
+Inky Scatter Rand(Around House):0.4622
+Clyde Chase Std:0.5
+Clyde Chase Std(12):0.4074
+Clyde Chase Std(5, 3):0.5158
+Clyde Chase Std(12, 3):0.4425
+Clyde Chase ClosestDot:0.6010
+Clyde Chase ClosestDot(12):0.5323
+Clyde Chase ClosestDot(8, 3):0.5590
+Clyde Chase ClosestDot(5, 3):0.6076
+Clyde Chase ClosestEnerg(5):0.666
+Clyde Chase ClosestEnerg(12):0.6184
+Clyde Scatter Std:0.5
+Clyde Scatter Rand(Down Left):0.5378
+Clyde Scatter Rand(House SW):0.4799
+Clyde Scatter Rand(Around House):0.4788
